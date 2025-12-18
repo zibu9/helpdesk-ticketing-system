@@ -8,23 +8,39 @@
 </head>
 <body class="bg-light">
 <div class="container py-4">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    @php
+        $connectedTechnician = session('technician_id')
+            ? \App\Models\User::find(session('technician_id'))
+            : null;
+
+        $statusClass = match ($ticket->status) {
+            'ouvert' => 'bg-warning text-dark',
+            'en_cours' => 'bg-primary',
+            'resolu' => 'bg-success',
+            default => 'bg-secondary',
+        };
+    @endphp
+
+    <div class="d-flex align-items-start justify-content-between mb-3">
         <div>
-            @php
-                $connectedTechnician = session('technician_id')
-                    ? \App\Models\User::find(session('technician_id'))
-                    : null;
-            @endphp
             <div class="text-muted small">
-                Helpdesk technicien
+                <a href="{{ route('technician.tickets.index') }}" class="text-decoration-none">Tickets</a>
+                <span class="mx-1">/</span>
+                <span>Ticket #{{ $ticket->id }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+                <h1 class="h4 mb-0">Ticket #{{ $ticket->id }}</h1>
+                <span class="badge {{ $statusClass }}">{{ str_replace('_', ' ', $ticket->status) }}</span>
+            </div>
+            <div class="text-muted small mt-1">
                 @if ($connectedTechnician)
-                    — connecté : {{ $connectedTechnician->name }}
+                    Connecté : {{ $connectedTechnician->name }}
                 @endif
             </div>
-            <h1 class="h4 mb-0">Ticket #{{ $ticket->id }}</h1>
         </div>
+
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('technician.tickets.index') }}" class="btn btn-outline-secondary btn-sm">Retour à la liste</a>
+            <a href="{{ route('technician.tickets.index') }}" class="btn btn-outline-secondary btn-sm">Retour</a>
             <form method="POST" action="{{ route('technician.logout') }}" class="d-inline">
                 @csrf
                 <button type="submit" class="btn btn-outline-danger btn-sm">Déconnexion</button>
@@ -49,11 +65,14 @@
         </div>
     @endif
 
-    <div class="row g-3">
+    <div class="row g-4">
         <div class="col-12 col-lg-5">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h2 class="h6 mb-3">Informations</h2>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h2 class="h6 mb-0">Informations</h2>
+                        <span class="text-muted small">{{ $ticket->created_at?->format('d/m/Y H:i') }}</span>
+                    </div>
 
                     <dl class="row mb-0">
                         <dt class="col-4">Nom</dt>
@@ -67,14 +86,6 @@
 
                         <dt class="col-4">Statut</dt>
                         <dd class="col-8">
-                            @php
-                                $statusClass = match ($ticket->status) {
-                                    'ouvert' => 'bg-warning text-dark',
-                                    'en_cours' => 'bg-primary',
-                                    'resolu' => 'bg-success',
-                                    default => 'bg-secondary',
-                                };
-                            @endphp
                             <span class="badge {{ $statusClass }}">
                                 {{ str_replace('_', ' ', $ticket->status) }}
                             </span>
@@ -83,8 +94,6 @@
                         <dt class="col-4">Assigné</dt>
                         <dd class="col-8">{{ $ticket->technician?->name ?? '—' }}</dd>
 
-                        <dt class="col-4">Créé</dt>
-                        <dd class="col-8">{{ $ticket->created_at?->format('d/m/Y H:i') }}</dd>
                     </dl>
                 </div>
             </div>
@@ -98,7 +107,8 @@
 
             <div class="card shadow-sm mt-3">
                 <div class="card-body">
-                    <h2 class="h6 mb-3">Changer le statut</h2>
+                    <h2 class="h6 mb-1">Changer le statut</h2>
+                    <div class="text-muted small mb-3">Utilise ce menu pour suivre l'avancement du ticket.</div>
 
                     <form method="POST" action="{{ route('technician.tickets.status.update', $ticket) }}" class="vstack gap-2">
                         @csrf
@@ -117,7 +127,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                            <button type="submit" class="btn btn-primary">Mettre à jour le statut</button>
                         </div>
                     </form>
                 </div>
@@ -137,7 +147,7 @@
                     @else
                         <div class="vstack gap-3">
                             @foreach ($ticket->comments as $comment)
-                                <div class="border rounded p-3 bg-white">
+                                <div class="border rounded-3 p-3 bg-white">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <div class="fw-semibold">{{ $comment->author?->name ?? 'Technicien' }}</div>
                                         <div class="text-muted small">{{ $comment->created_at?->format('d/m/Y H:i') }}</div>
@@ -152,7 +162,8 @@
 
             <div class="card shadow-sm mt-3">
                 <div class="card-body">
-                    <h2 class="h6 mb-3">Ajouter un commentaire</h2>
+                    <h2 class="h6 mb-1">Ajouter un commentaire</h2>
+                    <div class="text-muted small mb-3">Ajoute une note visible dans l'historique du ticket.</div>
 
                     <form method="POST" action="{{ route('technician.tickets.comments.store', $ticket) }}" class="vstack gap-2">
                         @csrf
