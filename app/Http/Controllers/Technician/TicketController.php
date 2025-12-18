@@ -7,7 +7,6 @@ use App\Models\Ticket;
 use App\Models\TicketComment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -59,9 +58,15 @@ class TicketController extends Controller
             'comment.min' => 'Le commentaire doit contenir au moins :min caractères.',
         ]);
 
+        $technicianId = $request->session()->get('technician_id');
+
+        if (!$technicianId) {
+            return redirect('/login');
+        }
+
         TicketComment::create([
             'ticket_id' => $ticket->id,
-            'user_id' => Auth::id(),
+            'user_id' => $technicianId,
             'comment' => $validated['comment'],
         ]);
 

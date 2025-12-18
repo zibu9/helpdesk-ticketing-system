@@ -9,10 +9,20 @@
 <body class="bg-light">
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-7">
+        <div class="col-12 col-lg-8">
+            <div class="d-flex align-items-start justify-content-between mb-3">
+                <div>
+                    <div class="text-muted small">Helpdesk réseau</div>
+                    <h1 class="h3 mb-1">Créer un ticket</h1>
+                    <div class="text-muted">Décris ton problème, un technicien te recontactera si nécessaire.</div>
+                </div>
+                <div class="text-end">
+                    <a href="{{ route('login') }}" class="btn btn-outline-secondary btn-sm">Accès technicien</a>
+                </div>
+            </div>
+
             <div class="card shadow-sm">
                 <div class="card-body p-4">
-                    <h1 class="h4 mb-3">Créer un ticket réseau</h1>
 
                     @if (session('success'))
                         <div class="alert alert-success" role="alert">
@@ -31,39 +41,41 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('tickets.store') }}" class="vstack gap-3">
+                    <form method="POST" action="{{ route('tickets.store') }}" class="vstack gap-4">
                         @csrf
 
-                        <div>
-                            <label for="name" class="form-label">Nom</label>
-                            <input
-                                type="text"
-                                class="form-control @error('name') is-invalid @enderror"
-                                id="name"
-                                name="name"
-                                value="{{ old('name') }}"
-                                autocomplete="name"
-                                required
-                            >
-                            @error('name')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="name" class="form-label">Nom</label>
+                                <input
+                                    type="text"
+                                    class="form-control @error('name') is-invalid @enderror"
+                                    id="name"
+                                    name="name"
+                                    value="{{ old('name') }}"
+                                    autocomplete="name"
+                                    required
+                                >
+                                @error('name')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
 
-                        <div>
-                            <label for="email" class="form-label">E-mail</label>
-                            <input
-                                type="email"
-                                class="form-control @error('email') is-invalid @enderror"
-                                id="email"
-                                name="email"
-                                value="{{ old('email') }}"
-                                autocomplete="email"
-                                required
-                            >
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <div class="col-12 col-md-6">
+                                <label for="email" class="form-label">E-mail</label>
+                                <input
+                                    type="email"
+                                    class="form-control @error('email') is-invalid @enderror"
+                                    id="email"
+                                    name="email"
+                                    value="{{ old('email') }}"
+                                    autocomplete="email"
+                                    required
+                                >
+                                @error('email')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
                         <div>
@@ -84,6 +96,7 @@
                             @error('issue_type')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <div class="form-text">Choisis la catégorie qui se rapproche le plus.</div>
                         </div>
 
                         <div>
@@ -98,18 +111,15 @@
                             @error('description')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">Décris le problème (au moins 10 caractères).</div>
+                            <div class="form-text">Décris le problème de façon précise (au moins 10 caractères).</div>
                         </div>
 
-                        <div class="d-flex justify-content-end">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2">
+                            <div class="text-muted small">En envoyant, tu acceptes d'être recontacté à cet e-mail.</div>
                             <button type="submit" class="btn btn-primary">Envoyer le ticket</button>
                         </div>
                     </form>
                 </div>
-            </div>
-
-            <div class="text-center small text-muted mt-3">
-                Accès technicien : <a href="{{ route('login') }}">se connecter</a>
             </div>
         </div>
     </div>
