@@ -1,59 +1,177 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Helpdesk Ticketing System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Helpdesk réseau simplifié construit avec Laravel.
 
-## About Laravel
+Objectif : un utilisateur **sans compte** peut créer un ticket, et un technicien (connexion **manuelle** basée sur la **session**) peut consulter/traiter les tickets.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 1) Modélisation (base de données)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Tables
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+#### `users` (techniciens)
 
-## Learning Laravel
+Table standard Laravel utilisée ici comme base des comptes techniciens (connexion manuelle).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- `id`
+- `name` (string)
+- `email` (string, unique)
+- `password` (string, hashé)
+- `created_at`, `updated_at`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+#### `tickets`
 
-## Laravel Sponsors
+- `id`
+- `name` (string) : nom du demandeur
+- `email` (string) : email du demandeur
+- `issue_type` (string) : type de problème (Internet / Wi‑Fi / …)
+- `description` (text) : description du problème
+- `status` (enum) : `ouvert` | `en_cours` | `resolu`
+- `assigned_to` (nullable FK -> `users.id`) : technicien assigné (MVP)
+- `created_at`, `updated_at`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+#### `ticket_comments`
 
-### Premium Partners
+- `id`
+- `ticket_id` (FK -> `tickets.id`, cascade delete)
+- `user_id` (FK -> `users.id`, cascade delete) : technicien auteur
+- `comment` (text)
+- `created_at`, `updated_at`
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Relations Eloquent
 
-## Contributing
+#### `Ticket`
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- `Ticket::comments()` : `hasMany(TicketComment::class)`
+- `Ticket::technician()` : `belongsTo(User::class, 'assigned_to')`
 
-## Code of Conduct
+#### `TicketComment`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- `TicketComment::ticket()` : `belongsTo(Ticket::class)`
+- `TicketComment::author()` : `belongsTo(User::class, 'user_id')`
 
-## Security Vulnerabilities
+## 2) Fonctionnalités MVP
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Utilisateur (sans compte)
 
-## License
+- **Créer un ticket**
+- **Page de confirmation**
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Technicien (connexion manuelle)
+
+- Se connecter via `/technician/login`
+- Voir la liste des tickets
+- Voir le détail d’un ticket
+- Changer le statut (`ouvert`, `en_cours`, `resolu`)
+- Ajouter un commentaire
+- Se déconnecter
+
+Contraintes :
+
+- Pas de permissions complexes
+- Pas de notifications
+- Pas de JS lourd
+
+## 3) Auth technicien (session-only)
+
+Ce projet n’utilise **pas** Breeze/Jetstream et n’utilise pas `auth()` pour l’espace technicien.
+
+Principe :
+
+- Au login, l’id du technicien est stocké en session : `technician_id`
+- Le middleware `technician.auth` protège les routes `/technician/*`
+- Le middleware `technician.guest` empêche un technicien déjà connecté d’accéder au formulaire de login
+
+## 4) Routes principales
+
+### Public
+
+- `GET /tickets/create` : formulaire
+- `POST /tickets` : enregistrement
+- `GET /tickets/confirmation` : confirmation
+
+### Technicien
+
+- `GET /technician/login`
+- `POST /technician/login`
+- `POST /technician/logout`
+- `GET /technician/tickets`
+- `GET /technician/tickets/{ticket}`
+- `PATCH /technician/tickets/{ticket}/status`
+- `POST /technician/tickets/{ticket}/comments`
+
+## 5) Structure du code (MVP)
+
+### Controllers
+
+- `app/Http/Controllers/TicketController.php`
+- `app/Http/Controllers/Technician/TicketController.php`
+- `app/Http/Controllers/Auth/LoginController.php`
+
+### Requests
+
+- `app/Http/Requests/StoreTicketRequest.php`
+
+### Middlewares
+
+- `app/Http/Middleware/TechnicianAuth.php`
+- `app/Http/Middleware/TechnicianGuest.php`
+
+Enregistrement (Laravel 11+) : `bootstrap/app.php` (`$middleware->alias([...])`).
+
+### Vues
+
+- `resources/views/tickets/create.blade.php`
+- `resources/views/tickets/confirmation.blade.php`
+- `resources/views/auth/login.blade.php`
+- `resources/views/technician/tickets/index.blade.php`
+- `resources/views/technician/tickets/show.blade.php`
+
+## 6) Installation & exécution (local)
+
+### Prérequis
+
+- PHP 8.2+
+- Composer
+
+### Installer
+
+```bash
+composer install
+copy .env.example .env
+php artisan key:generate
+```
+
+### Base de données
+
+Ce projet fonctionne avec SQLite (rapide pour le MVP). Assure-toi que le fichier existe :
+
+```bash
+php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+```
+
+Puis :
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+### Lancer le serveur
+
+```bash
+php artisan serve
+```
+
+## 7) Compte technicien (seed)
+
+Le seeder `Database\Seeders\TechnicianSeeder` crée un technicien par défaut :
+
+- Email : `tech@example.com`
+- Mot de passe : `password`
+
+Login :
+
+- `http://127.0.0.1:8000/technician/login`
+
+## 8) Notes MVP
+
+- Les statuts autorisés sont limités à : `ouvert`, `en_cours`, `resolu`.
